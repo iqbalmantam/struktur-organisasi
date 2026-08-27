@@ -30,11 +30,12 @@ st.markdown(
         color: white;
     }
     
-    /* Styling Watermark */
+    /* Styling Watermark di Tengah Bawah */
     .watermark {
         position: fixed;
         bottom: 15px;
-        right: 20px;
+        left: 50%; /* Membawa elemen ke tengah layar */
+        transform: translateX(-50%); /* Menggeser presisi persis ke tengah */
         font-size: 14px;
         font-family: 'Helvetica', sans-serif;
         font-weight: bold;
