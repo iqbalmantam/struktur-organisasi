@@ -8,9 +8,17 @@ st.set_page_config(
     page_title="Org Chart - JDC Warehouse", layout="wide"
 )
 
+# Injeksi CSS untuk menyembunyikan header/GitHub logo dan menambahkan watermark
 st.markdown(
     """
     <style>
+    /* Menyembunyikan header, menu, dan footer bawaan Streamlit */
+    [data-testid="stHeader"] {visibility: hidden;}
+    [data-testid="stToolbar"] {visibility: hidden;}
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+
+    /* Styling Box Legend */
     .legend-box {
         display: inline-block;
         padding: 6px 14px;
@@ -21,7 +29,27 @@ st.markdown(
         font-weight: 600;
         color: white;
     }
+    
+    /* Styling Watermark */
+    .watermark {
+        position: fixed;
+        bottom: 15px;
+        right: 20px;
+        font-size: 14px;
+        font-family: 'Helvetica', sans-serif;
+        font-weight: bold;
+        color: #64748b; /* Warna abu-abu slate */
+        background-color: rgba(255, 255, 255, 0.85); /* Background agak transparan */
+        padding: 6px 12px;
+        border-radius: 6px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        z-index: 9999;
+        pointer-events: none; /* Supaya tidak memblokir klik pada chart di bawahnya */
+    }
     </style>
+    
+    <!-- Elemen Watermark -->
+    <div class="watermark">Developed by iqbalmantam</div>
 """,
     unsafe_allow_html=True,
 )
