@@ -1,5 +1,0 @@
-streamlit
-gspread
-gspread-dataframe
-pandas
-graphviz
