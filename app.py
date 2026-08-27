@@ -5,7 +5,7 @@ import streamlit as st
 import graphviz
 
 st.set_page_config(
-    page_title="Enterprise Org Chart - JDC Warehouse", layout="wide"
+    page_title="Org Chart - JDC Warehouse", layout="wide"
 )
 
 st.markdown(
@@ -26,7 +26,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.title("🏢 Enterprise Organizational Chart Dashboard")
+st.title("🏢 JDC Chart Dashboard")
 st.write(
     "Bagan organisasi dibangun dari tabel data eksplisit (Nama, Jabatan,"
     " Level, Atasan) — setiap baris = satu orang, jadi tidak ada tebakan"
