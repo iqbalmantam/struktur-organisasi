@@ -62,8 +62,7 @@ st.markdown(
 st.title("🏢 JDC Chart Dashboard")
 st.write(
     "Bagan organisasi dibangun dari tabel data eksplisit (Nama, Jabatan,"
-    " Level, Atasan) — setiap baris = satu orang, jadi tidak ada tebakan"
-    " posisi baris/kolom dan hasilnya selalu akurat."
+    " Level, Atasan)"
 )
 
 # ============================================================
