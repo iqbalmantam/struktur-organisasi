@@ -111,8 +111,7 @@ if last_modified:
 st.info(
     "📋 Pilih worksheet yang berisi **tabel data terstruktur** dengan kolom:"
     " `Nama`, `Jabatan`, `Level` (opsional), `Atasan` (nama atasan langsung —"
-    " kosongkan untuk posisi paling atas). Ini BUKAN worksheet 'JDC Warehouse'"
-    " mentah yang formatnya visual/bebas."
+    " kosongkan untuk posisi paling atas).'"
 )
 selected_sheet_name = st.selectbox(
     "📌 Pilih Worksheet Data Org Chart:", worksheet_list
