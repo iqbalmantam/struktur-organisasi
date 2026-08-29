@@ -60,7 +60,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.title("🏢 JDC Chart Dashboard")
+st.title("🏢 WEST Chart Dashboard")
 
 # ============================================================
 # GOOGLE SHEETS CONNECTION
