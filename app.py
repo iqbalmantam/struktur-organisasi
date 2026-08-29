@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 import graphviz
 
 st.set_page_config(
-    page_title="Org Chart - JDC Warehouse", layout="wide"
+    page_title="Org Chart - WEST Warehouse", layout="wide"
 )
 
 # Injeksi CSS untuk menyembunyikan header/GitHub logo dan menambahkan watermark
@@ -60,7 +60,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.title("🏢 JDC Chart Dashboard")
+st.title("🏢 WEST Chart Dashboard")
 
 # ============================================================
 # GOOGLE SHEETS CONNECTION
