@@ -35,7 +35,7 @@ st.markdown(
         font-weight: 600;
         color: white;
     }
-    
+
     /* Styling Watermark di Tengah Bawah */
     .watermark {
         position: fixed;
@@ -54,14 +54,14 @@ st.markdown(
         pointer-events: none; /* Supaya tidak memblokir klik pada chart di bawahnya */
     }
     </style>
-    
+
     <!-- Elemen Watermark -->
     <div class="watermark">Developed by iqbalmantam</div>
 """,
     unsafe_allow_html=True,
 )
 
-st.title("🏢 WEST Chart Dashboard")
+st.title("ðŸ¢ WEST Chart Dashboard")
 
 # ============================================================
 # GOOGLE SHEETS CONNECTION
@@ -108,15 +108,15 @@ def get_last_modified(gc, file_id):
 
 last_modified = get_last_modified(gc, spreadsheet_id)
 if last_modified:
-    st.caption(f"🕒 Sheet terakhir diupdate: **{last_modified}**")
+    st.caption(f"ðŸ•’ Sheet terakhir diupdate: **{last_modified}**")
 
 st.info(
-    "📋 Pilih worksheet yang berisi **tabel data terstruktur** dengan kolom:"
-    " `Nama`, `Jabatan`, `Level` (opsional), `Atasan` (nama atasan langsung —"
+    "ðŸ“‹ Pilih worksheet yang berisi **tabel data terstruktur** dengan kolom:"
+    " `Nama`, `Jabatan`, `Level` (opsional), `Atasan` (nama atasan langsung â€”"
     " kosongkan untuk posisi paling atas)."
 )
 selected_sheet_name = st.selectbox(
-    "📌 Pilih Worksheet Data Org Chart:", worksheet_list
+    "ðŸ“Œ Pilih Worksheet Data Org Chart:", worksheet_list
 )
 worksheet = sh.worksheet(selected_sheet_name)
 data_df = get_as_dataframe(worksheet, evaluate_formulas=True)
@@ -137,7 +137,7 @@ if missing:
 data_df["Nama"] = data_df["Nama"].astype(str).str.strip()
 data_df["Jabatan"] = data_df["Jabatan"].astype(str).str.strip()
 data_df["Atasan"] = data_df["Atasan"].fillna("").astype(str).str.strip()
-data_df.loc[data_df["Atasan"].isin(["-", "—", "–"]), "Atasan"] = ""
+data_df.loc[data_df["Atasan"].isin(["-", "â€”", "â€“"]), "Atasan"] = ""
 if "Level" in data_df.columns:
     data_df["Level"] = data_df["Level"].fillna("").astype(str).str.strip()
 else:
@@ -217,7 +217,7 @@ def build_org_graph(
         if not row["Nama"]:
             continue
         # Orang yang jadi atasan bagi orang lain TIDAK BOLEH diringkas,
-        # walaupun levelnya masuk daftar collapse — kalau diringkas, node-nya
+        # walaupun levelnya masuk daftar collapse â€” kalau diringkas, node-nya
         # hilang dan anak buahnya jadi tidak punya tempat nempel (orphan).
         if row["Level"] in collapse_levels and row["Nama"] not in has_children:
             grouped_rows.append(row)
@@ -265,9 +265,38 @@ def build_org_graph(
 
 
 # ============================================================
-# LAYOUT — TABS
+# HELPER: Build hierarchy maps for JS interaction
 # ============================================================
-tab_chart, tab_editor = st.tabs(["📊 Bagan Organisasi", "📄 Lihat Data Sheets"])
+def build_hierarchy_maps(df: pd.DataFrame) -> dict:
+    """Build parent_map and node_info for JavaScript breadcrumb + highlighting."""
+    parent_map = {}  # child -> parent
+    node_info = {}   # name -> {jabatan, level}
+    children_map = {}  # parent -> [children]
+
+    for _, row in df.iterrows():
+        name = str(row["Nama"]).strip()
+        if not name:
+            continue
+        jabatan = str(row.get("Jabatan", "")).strip()
+        level = str(row.get("Level", "")).strip()
+        atasan = str(row.get("Atasan", "")).strip()
+
+        node_info[name] = {"jabatan": jabatan, "level": level}
+        if atasan:
+            parent_map[name] = atasan
+            children_map.setdefault(atasan, []).append(name)
+
+    return {
+        "parent_map": parent_map,
+        "node_info": node_info,
+        "children_map": children_map,
+    }
+
+
+# ============================================================
+# LAYOUT â€” TABS
+# ============================================================
+tab_chart, tab_editor = st.tabs(["ðŸ“Š Bagan Organisasi", "ðŸ“„ Lihat Data Sheets"])
 
 with tab_chart:
     st.subheader(f"Struktur: {selected_sheet_name}")
@@ -282,14 +311,14 @@ with tab_chart:
     total_terisi = total_posisi - total_vacant
 
     stat_cols = st.columns(4)
-    stat_cols[0].metric("👥 Total Posisi", total_posisi)
-    stat_cols[1].metric("✅ Terisi", total_terisi)
-    stat_cols[2].metric("🔴 Vacant", total_vacant)
+    stat_cols[0].metric("ðŸ‘¥ Total Posisi", total_posisi)
+    stat_cols[1].metric("âœ… Terisi", total_terisi)
+    stat_cols[2].metric("ðŸ”´ Vacant", total_vacant)
     level_counts = data_df[~vacant_mask]["Level"].value_counts()
     top_level = level_counts.idxmax() if not level_counts.empty else "-"
-    stat_cols[3].metric("📌 Level Terbanyak", top_level)
+    stat_cols[3].metric("ðŸ“Œ Level Terbanyak", top_level)
 
-    with st.expander("📊 Rincian jumlah per level"):
+    with st.expander("ðŸ“Š Rincian jumlah per level"):
         st.dataframe(
             data_df[data_df["Nama"] != ""]["Level"]
             .value_counts()
@@ -299,7 +328,7 @@ with tab_chart:
         )
 
     # ---------- SPAN OF CONTROL ----------
-    with st.expander("🏆 Papan Span of Control (anak buah langsung terbanyak)"):
+    with st.expander("ðŸ† Papan Span of Control (anak buah langsung terbanyak)"):
         span_df = (
             data_df[(data_df["Atasan"] != "") & (~vacant_mask)]
             .groupby("Atasan").size().rename("Jumlah Anak Buah")
@@ -338,10 +367,10 @@ with tab_chart:
                 reports = data_df[
                     (data_df["Atasan"] == clicked_name) & (~vacant_mask)
                 ][["Nama", "Jabatan"]].reset_index(drop=True)
-                st.caption(f"👥 Anak buah langsung — **{clicked_name}** ({len(reports)} orang):")
+                st.caption(f"ðŸ‘¥ Anak buah langsung â€” **{clicked_name}** ({len(reports)} orang):")
                 st.dataframe(reports, use_container_width=True, hide_index=True)
             else:
-                st.caption("💡 Klik salah satu batang untuk lihat daftar anak buahnya.")
+                st.caption("ðŸ’¡ Klik salah satu batang untuk lihat daftar anak buahnya.")
 
             st.dataframe(
                 span_df[["Nama", "Jabatan", "Jumlah Anak Buah"]],
@@ -351,7 +380,7 @@ with tab_chart:
             st.caption("Belum ada data hubungan atasan-bawahan.")
 
     # ---------- PENCARIAN NAMA ----------
-    search_query = st.text_input("🔍 Cari nama", placeholder="Ketik nama, mis. Firmansyah")
+    search_query = st.text_input("ðŸ” Cari nama", placeholder="Ketik nama, mis. Firmansyah")
     search_matched: set = set()
     if search_query.strip():
         search_matched = set(
@@ -366,26 +395,26 @@ with tab_chart:
         projects_present = sorted(p for p in data_df["Project"].unique() if p)
         if projects_present:
             project_selected = st.selectbox(
-                "🏗️ Filter per Project", ["Semua"] + projects_present, key="project_filter",
+                "ðŸ—ï¸ Filter per Project", ["Semua"] + projects_present, key="project_filter",
             )
             if project_selected == "Semua":
                 project_selected = None
 
     levels_present = [l for l in data_df["Level"].unique() if l]
     if levels_present:
-        st.caption("👉 Klik level untuk fokus ke bagian itu saja (lebih mudah dibaca):")
+        st.caption("ðŸ‘‰ Klik level untuk fokus ke bagian itu saja (lebih mudah dibaca):")
         cols = st.columns(len(levels_present) + 1)
         for i, lvl in enumerate(levels_present):
             is_active = st.session_state.focus_level == lvl
             with cols[i]:
                 if st.button(
-                    ("● " if is_active else "") + lvl, key=f"btn_{lvl}",
+                    ("â— " if is_active else "") + lvl, key=f"btn_{lvl}",
                     type="primary" if is_active else "secondary",
                 ):
                     st.session_state.focus_level = None if is_active else lvl
                     st.rerun()
         with cols[-1]:
-            if st.button("↺ Semua", key="btn_reset"):
+            if st.button("â†º Semua", key="btn_reset"):
                 st.session_state.focus_level = None
                 st.rerun()
 
@@ -420,7 +449,7 @@ with tab_chart:
     rankdir = "TB" if orientation_label == "Atas ke Bawah" else "LR"
     if rankdir == "LR" and not active_matched:
         st.caption(
-            "⚠️ Mode Kiri ke Kanan menumpuk banyak anak-buah secara vertikal,"
+            "âš ï¸ Mode Kiri ke Kanan menumpuk banyak anak-buah secara vertikal,"
             " jadi untuk tampilan 'Semua' bisa jadi sangat panjang ke bawah."
             " Lebih pas dipakai saat fokus ke satu level (klik salah satu"
             " tombol level di atas)."
@@ -428,7 +457,7 @@ with tab_chart:
 
     MANAGEMENT_LEVELS = {"Head", "Manager", "Asst. Manager", "Supervisor", "Leader"}
     default_collapse = [l for l in levels_present if l not in MANAGEMENT_LEVELS]
-    with st.expander("🗜️ Atur level yang diringkas (khusus tampilan 'Semua')", expanded=False):
+    with st.expander("ðŸ—œï¸ Atur level yang diringkas (khusus tampilan 'Semua')", expanded=False):
         collapse_choice = st.multiselect(
             "Level ini akan ditampilkan sebagai 1 kotak ringkasan (n orang),"
             " bukan nama satu-satu:",
@@ -443,6 +472,10 @@ with tab_chart:
         nodesep=0.3, ranksep=0.55,
     )
 
+    # Build hierarchy data for JS breadcrumb + highlight
+    hierarchy_data = build_hierarchy_maps(data_df)
+    hierarchy_json = json.dumps(hierarchy_data, ensure_ascii=False)
+
     try:
         svg_source = org_graph.pipe(format="svg").decode("utf-8")
         height_match = re.search(r'height="(\d+)pt"', svg_source)
@@ -451,6 +484,59 @@ with tab_chart:
         group_details_json = json.dumps(group_details, ensure_ascii=False)
         frame_html = f"""
         <div style="position: relative; width: 100%;">
+
+            <!-- BREADCRUMB BAR -->
+            <div id="orgBreadcrumb" style="
+                display: none;
+                background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+                border: 1px solid #334155;
+                border-radius: 8px;
+                padding: 10px 14px;
+                margin-bottom: 8px;
+                font-family: Helvetica, sans-serif;
+                animation: fadeIn 0.3s ease;
+            ">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <div style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+                            Reporting Chain
+                        </div>
+                        <div id="orgBreadcrumbPath" style="font-size: 13px; color: #e2e8f0; line-height: 1.6;"></div>
+                        <div id="orgBreadcrumbInfo" style="font-size: 11px; color: #94a3b8; margin-top: 4px;"></div>
+                    </div>
+                    <span onclick="orgClearHighlight()" style="
+                        cursor: pointer; color: #94a3b8; font-size: 18px;
+                        padding: 0 4px; margin-left: 12px; line-height: 1;
+                        border-radius: 4px; transition: color 0.2s;
+                    " onmouseover="this.style.color='#f8fafc'" onmouseout="this.style.color='#94a3b8'"
+                    title="Tutup & reset highlight">&times;</span>
+                </div>
+            </div>
+
+            <!-- LEGEND FOR HIGHLIGHT COLORS -->
+            <div id="orgHighlightLegend" style="
+                display: none;
+                padding: 6px 14px;
+                margin-bottom: 6px;
+                font-family: Helvetica, sans-serif;
+                font-size: 11px;
+                color: #94a3b8;
+            ">
+                <span style="display: inline-flex; align-items: center; margin-right: 16px;">
+                    <span style="width: 14px; height: 14px; border-radius: 3px; background: #f59e0b; display: inline-block; margin-right: 5px; border: 2px solid #fbbf24;"></span>
+                    Ke atas (atasan)
+                </span>
+                <span style="display: inline-flex; align-items: center; margin-right: 16px;">
+                    <span style="width: 14px; height: 14px; border-radius: 3px; background: #06b6d4; display: inline-block; margin-right: 5px; border: 2px solid #22d3ee;"></span>
+                    Ke bawah (bawahan)
+                </span>
+                <span style="display: inline-flex; align-items: center;">
+                    <span style="width: 14px; height: 14px; border-radius: 3px; background: #ef4444; display: inline-block; margin-right: 5px; border: 2px solid #f87171;"></span>
+                    Orang yang diklik
+                </span>
+            </div>
+
+            <!-- ZOOM CONTROLS -->
             <div style="
                 position: absolute; left: 8px; top: 8px; z-index: 10;
                 display: flex; flex-direction: column; align-items: center; gap: 4px;
@@ -468,12 +554,14 @@ with tab_chart:
                 <button onclick="orgZoom(-0.1)" style="
                     width: 26px; height: 26px; border-radius: 4px; border: none;
                     background: #334155; color: white; font-size: 16px; cursor: pointer;
-                ">−</button>
+                ">-</button>
                 <button onclick="orgZoom(0)" title="Reset zoom" style="
                     width: 26px; height: 26px; border-radius: 4px; border: none;
                     background: #1e293b; color: #94a3b8; font-size: 11px; cursor: pointer;
-                ">⟲</button>
+                ">&#x27F2;</button>
             </div>
+
+            <!-- SVG CHART CONTAINER -->
             <div id="orgScrollBox" style="
                 width: 100%; height: {display_height}px; overflow: auto;
                 border: 1px solid #334155; border-radius: 8px;
@@ -481,6 +569,34 @@ with tab_chart:
                 <div id="orgSvgWrap" style="zoom: 1;">{svg_source}</div>
             </div>
 
+            <!-- EXPORT BUTTONS (client-side â€” captures the chart exactly as displayed) -->
+            <div id="orgExportBar" style="
+                display: flex; gap: 8px; padding: 10px 0 4px 0;
+                font-family: Helvetica, sans-serif;
+            ">
+                <button onclick="orgExportChart('pdf')" style="
+                    flex: 1; padding: 10px 0; border-radius: 8px; border: 1px solid #334155;
+                    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+                    color: #e2e8f0; font-size: 13px; font-weight: 600; cursor: pointer;
+                    transition: all 0.2s;
+                " onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='#334155'">
+                    &#x1F4C4; Download PDF
+                </button>
+                <button onclick="orgExportChart('png')" style="
+                    flex: 1; padding: 10px 0; border-radius: 8px; border: 1px solid #334155;
+                    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+                    color: #e2e8f0; font-size: 13px; font-weight: 600; cursor: pointer;
+                    transition: all 0.2s;
+                " onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='#334155'">
+                    &#x1F5BC; Download PNG
+                </button>
+            </div>
+            <div id="orgExportStatus" style="
+                display: none; text-align: center; padding: 6px;
+                font-family: Helvetica, sans-serif; font-size: 12px; color: #94a3b8;
+            "></div>
+
+            <!-- MODAL FOR GROUPED NODES -->
             <div id="orgModalOverlay" onclick="orgCloseModal(event)" style="
                 display: none; position: fixed; inset: 0; z-index: 1000;
                 background: rgba(0,0,0,0.55); align-items: center; justify-content: center;
@@ -492,13 +608,32 @@ with tab_chart:
                 ">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                         <strong id="orgModalTitle" style="color:#f8fafc; font-size:14px;"></strong>
-                        <span onclick="orgCloseModal(event, true)" style="cursor:pointer; color:#94a3b8; font-size:16px; padding-left:12px;">×</span>
+                        <span onclick="orgCloseModal(event, true)" style="cursor:pointer; color:#94a3b8; font-size:16px; padding-left:12px;">&times;</span>
                     </div>
                     <ol id="orgModalList" style="margin:0; padding-left:18px; color:#cbd5e1; font-size:13px; line-height:1.7;"></ol>
                 </div>
             </div>
         </div>
+
+        <!-- jsPDF for PDF export -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+
+        <style>
+            @keyframes fadeIn {{
+                from {{ opacity: 0; transform: translateY(-6px); }}
+                to {{ opacity: 1; transform: translateY(0); }}
+            }}
+            .org-node-clickable {{
+                cursor: pointer;
+                transition: opacity 0.2s;
+            }}
+            .org-node-clickable:hover {{
+                opacity: 0.85;
+            }}
+        </style>
+
         <script>
+            // â”€â”€ Zoom â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             let orgZoomLevel = 1;
             function orgZoom(delta) {{
                 orgZoomLevel = delta === 0 ? 1 : Math.min(3, Math.max(0.3, orgZoomLevel + delta));
@@ -506,6 +641,7 @@ with tab_chart:
                 document.getElementById('orgZoomLabel').innerText = Math.round(orgZoomLevel * 100) + '%';
             }}
 
+            // â”€â”€ Group details modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             const orgGroupDetails = {group_details_json};
 
             function orgOpenModal(nodeId) {{
@@ -527,45 +663,433 @@ with tab_chart:
                 }}
             }}
 
+            // â”€â”€ Hierarchy data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            const orgHierarchy = {hierarchy_json};
+            const parentMap = orgHierarchy.parent_map;       // child -> parent
+            const nodeInfo = orgHierarchy.node_info;         // name -> {{jabatan, level}}
+            const childrenMap = orgHierarchy.children_map;   // parent -> [children]
+
+            // â”€â”€ State tracking â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            let orgOriginalStyles = [];  // saved styles to restore
+            let orgHighlightActive = false;
+
+            // â”€â”€ Compute ancestor chain (bottom-up) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            function getAncestors(name) {{
+                const chain = [];
+                let cur = parentMap[name];
+                while (cur) {{
+                    chain.push(cur);
+                    cur = parentMap[cur] || null;
+                }}
+                return chain;  // nearest first, top last
+            }}
+
+            // â”€â”€ Compute all descendants (top-down BFS) â”€â”€â”€â”€â”€â”€
+            function getDescendants(name) {{
+                const result = [];
+                const queue = childrenMap[name] ? [...childrenMap[name]] : [];
+                while (queue.length > 0) {{
+                    const n = queue.shift();
+                    result.push(n);
+                    if (childrenMap[n]) {{
+                        queue.push(...childrenMap[n]);
+                    }}
+                }}
+                return result;
+            }}
+
+            // â”€â”€ Build breadcrumb HTML â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            function buildBreadcrumb(name) {{
+                const ancestors = getAncestors(name);
+                ancestors.reverse();  // top first
+                const chain = [...ancestors, name];
+
+                let html = '';
+                chain.forEach((n, i) => {{
+                    const info = nodeInfo[n] || {{}};
+                    const isTarget = (n === name);
+                    const color = isTarget ? '#ef4444' : (i < chain.length - 1 ? '#fbbf24' : '#e2e8f0');
+                    const weight = isTarget ? '700' : '400';
+
+                    if (i > 0) {{
+                        html += '<span style="color: #475569; margin: 0 5px;">&#x2192;</span>';
+                    }}
+                    html += '<span style="color:' + color + '; font-weight:' + weight + ';">' + n;
+                    if (info.jabatan) {{
+                        html += ' <span style="color:#64748b; font-size:11px;">(' + info.jabatan + ')</span>';
+                    }}
+                    html += '</span>';
+                }});
+
+                return html;
+            }}
+
+            // â”€â”€ Dim all nodes and edges â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            function dimAll() {{
+                orgOriginalStyles = [];
+
+                // Save & dim all nodes
+                document.querySelectorAll('#orgSvgWrap .node').forEach(g => {{
+                    const poly = g.querySelector('polygon, ellipse, rect, path');
+                    const texts = g.querySelectorAll('text');
+                    if (poly) {{
+                        orgOriginalStyles.push({{
+                            el: poly,
+                            fill: poly.getAttribute('fill'),
+                            stroke: poly.getAttribute('stroke'),
+                            strokeWidth: poly.getAttribute('stroke-width'),
+                        }});
+                        poly.setAttribute('opacity', '0.2');
+                    }}
+                    texts.forEach(t => {{
+                        orgOriginalStyles.push({{ el: t, opacity: t.getAttribute('opacity') }});
+                        t.setAttribute('opacity', '0.2');
+                    }});
+                }});
+
+                // Save & dim all edges
+                document.querySelectorAll('#orgSvgWrap .edge').forEach(g => {{
+                    const path = g.querySelector('path');
+                    const arrow = g.querySelector('polygon');
+                    if (path) {{
+                        orgOriginalStyles.push({{
+                            el: path,
+                            stroke: path.getAttribute('stroke'),
+                            strokeWidth: path.getAttribute('stroke-width'),
+                            opacity: path.getAttribute('opacity'),
+                        }});
+                        path.setAttribute('opacity', '0.1');
+                    }}
+                    if (arrow) {{
+                        orgOriginalStyles.push({{
+                            el: arrow,
+                            fill: arrow.getAttribute('fill'),
+                            stroke: arrow.getAttribute('stroke'),
+                            opacity: arrow.getAttribute('opacity'),
+                        }});
+                        arrow.setAttribute('opacity', '0.1');
+                    }}
+                }});
+            }}
+
+            // â”€â”€ Highlight specific node â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            function highlightNode(name, borderColor) {{
+                document.querySelectorAll('#orgSvgWrap .node').forEach(g => {{
+                    const titleEl = g.querySelector('title');
+                    if (!titleEl) return;
+                    const nodeId = titleEl.textContent.trim();
+                    if (nodeId !== name) return;
+
+                    const poly = g.querySelector('polygon, ellipse, rect, path');
+                    const texts = g.querySelectorAll('text');
+                    if (poly) {{
+                        poly.setAttribute('opacity', '1');
+                        poly.setAttribute('stroke', borderColor);
+                        poly.setAttribute('stroke-width', '3');
+                    }}
+                    texts.forEach(t => t.setAttribute('opacity', '1'));
+                }});
+            }}
+
+            // â”€â”€ Highlight specific edge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            function highlightEdge(parentName, childName, color) {{
+                document.querySelectorAll('#orgSvgWrap .edge').forEach(g => {{
+                    const titleEl = g.querySelector('title');
+                    if (!titleEl) return;
+                    const edgeTitle = titleEl.textContent.trim();
+                    // Graphviz edge title format: "parent->child"
+                    // Handle both with and without spaces
+                    const expected1 = parentName + '->' + childName;
+                    const expected2 = parentName + ' -> ' + childName;
+                    if (edgeTitle !== expected1 && edgeTitle !== expected2) return;
+
+                    const path = g.querySelector('path');
+                    const arrow = g.querySelector('polygon');
+                    if (path) {{
+                        path.setAttribute('stroke', color);
+                        path.setAttribute('stroke-width', '2.5');
+                        path.setAttribute('opacity', '1');
+                    }}
+                    if (arrow) {{
+                        arrow.setAttribute('fill', color);
+                        arrow.setAttribute('stroke', color);
+                        arrow.setAttribute('opacity', '1');
+                    }}
+                }});
+            }}
+
+            // â”€â”€ Main highlight function â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            function orgHighlightChain(name) {{
+                // If clicking same node again, clear
+                if (orgHighlightActive === name) {{
+                    orgClearHighlight();
+                    return;
+                }}
+
+                // Dim everything first
+                dimAll();
+
+                const ancestors = getAncestors(name);
+                const descendants = getDescendants(name);
+
+                // Highlight ancestors (gold/amber) â€” ke atas
+                ancestors.forEach(a => highlightNode(a, '#fbbf24'));
+
+                // Highlight ancestor edges (gold)
+                const ancestorChain = [...ancestors.reverse(), name];
+                for (let i = 0; i < ancestorChain.length - 1; i++) {{
+                    highlightEdge(ancestorChain[i], ancestorChain[i + 1], '#fbbf24');
+                }}
+
+                // Highlight descendants (cyan) â€” ke bawah
+                descendants.forEach(d => highlightNode(d, '#22d3ee'));
+
+                // Highlight descendant edges (cyan) using BFS
+                const queue = [name];
+                while (queue.length > 0) {{
+                    const cur = queue.shift();
+                    const kids = childrenMap[cur] || [];
+                    kids.forEach(kid => {{
+                        if (descendants.includes(kid)) {{
+                            highlightEdge(cur, kid, '#22d3ee');
+                            queue.push(kid);
+                        }}
+                    }});
+                }}
+
+                // Highlight clicked node itself (red â€” paling menonjol)
+                highlightNode(name, '#f87171');
+
+                // Show breadcrumb
+                const breadcrumbEl = document.getElementById('orgBreadcrumb');
+                const pathEl = document.getElementById('orgBreadcrumbPath');
+                const infoEl = document.getElementById('orgBreadcrumbInfo');
+                const legendEl = document.getElementById('orgHighlightLegend');
+
+                pathEl.innerHTML = buildBreadcrumb(name);
+
+                const directReports = (childrenMap[name] || []).length;
+                const totalDown = descendants.length;
+                const depth = getAncestors(name).length;
+                let infoText = 'Level kedalaman: ' + depth + ' dari atas';
+                if (directReports > 0) {{
+                    infoText += ' | Anak buah langsung: ' + directReports;
+                    if (totalDown > directReports) {{
+                        infoText += ' | Total bawahan: ' + totalDown;
+                    }}
+                }}
+                infoEl.innerText = infoText;
+
+                breadcrumbEl.style.display = 'block';
+                legendEl.style.display = 'block';
+
+                orgHighlightActive = name;
+            }}
+
+            // â”€â”€ Clear all highlights â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            function orgClearHighlight() {{
+                // Restore opacity for all nodes and edges
+                document.querySelectorAll('#orgSvgWrap .node').forEach(g => {{
+                    const poly = g.querySelector('polygon, ellipse, rect, path');
+                    const texts = g.querySelectorAll('text');
+                    if (poly) {{
+                        poly.setAttribute('opacity', '1');
+                    }}
+                    texts.forEach(t => t.setAttribute('opacity', '1'));
+                }});
+
+                document.querySelectorAll('#orgSvgWrap .edge').forEach(g => {{
+                    const path = g.querySelector('path');
+                    const arrow = g.querySelector('polygon');
+                    if (path) path.setAttribute('opacity', '1');
+                    if (arrow) arrow.setAttribute('opacity', '1');
+                }});
+
+                // Restore original styles (stroke, fill, etc.)
+                orgOriginalStyles.forEach(s => {{
+                    if (s.fill !== undefined && s.el.tagName !== 'text') s.el.setAttribute('fill', s.fill || '');
+                    if (s.stroke !== undefined) s.el.setAttribute('stroke', s.stroke || '');
+                    if (s.strokeWidth !== undefined) s.el.setAttribute('stroke-width', s.strokeWidth || '');
+                }});
+                orgOriginalStyles = [];
+
+                // Hide breadcrumb
+                document.getElementById('orgBreadcrumb').style.display = 'none';
+                document.getElementById('orgHighlightLegend').style.display = 'none';
+
+                orgHighlightActive = false;
+            }}
+
+            // â”€â”€ Attach click handlers to all nodes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             document.querySelectorAll('#orgSvgWrap .node').forEach(g => {{
                 const titleEl = g.querySelector('title');
                 if (!titleEl) return;
                 const nodeId = titleEl.textContent.trim();
+
+                // Group nodes: open modal
                 if (orgGroupDetails[nodeId]) {{
                     g.style.cursor = 'pointer';
                     g.addEventListener('click', () => orgOpenModal(nodeId));
                 }}
+                // Individual nodes: highlight chain + breadcrumb
+                else if (nodeInfo[nodeId]) {{
+                    g.style.cursor = 'pointer';
+                    g.classList.add('org-node-clickable');
+                    g.addEventListener('click', (e) => {{
+                        e.stopPropagation();
+                        orgHighlightChain(nodeId);
+                    }});
+                }}
             }});
+
+            // â”€â”€ EXPORT: Capture SVG as displayed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            function orgShowExportStatus(msg) {{
+                const el = document.getElementById('orgExportStatus');
+                el.innerText = msg;
+                el.style.display = 'block';
+                setTimeout(() => {{ el.style.display = 'none'; }}, 3000);
+            }}
+
+            function orgGetSvgForExport() {{
+                const svgEl = document.querySelector('#orgSvgWrap svg');
+                if (!svgEl) return null;
+
+                // Clone SVG to avoid mutating the displayed version
+                const clone = svgEl.cloneNode(true);
+
+                // Remove transparent bg, add white background rect
+                clone.removeAttribute('style');
+                const bbox = svgEl.getBBox ? svgEl.getBBox() : null;
+                const w = clone.getAttribute('width') || (bbox ? bbox.width + 20 : 800);
+                const h = clone.getAttribute('height') || (bbox ? bbox.height + 20 : 600);
+
+                // Insert white rect as first child for background
+                const ns = 'http://www.w3.org/2000/svg';
+                const bgRect = document.createElementNS(ns, 'rect');
+                bgRect.setAttribute('width', '100%');
+                bgRect.setAttribute('height', '100%');
+                bgRect.setAttribute('fill', '#ffffff');
+                clone.insertBefore(bgRect, clone.firstChild);
+
+                // Inline all computed styles onto SVG elements for faithful export
+                const allEls = clone.querySelectorAll('*');
+                const srcEls = svgEl.querySelectorAll('*');
+                for (let i = 0; i < Math.min(allEls.length, srcEls.length); i++) {{
+                    const computed = window.getComputedStyle(srcEls[i]);
+                    // Copy key visual styles
+                    ['fill', 'stroke', 'stroke-width', 'opacity', 'font-family', 'font-size',
+                     'font-weight', 'fill-opacity', 'stroke-opacity'].forEach(prop => {{
+                        const val = computed.getPropertyValue(prop);
+                        if (val) allEls[i].style[prop.replace(/-([a-z])/g, (m,c) => c.toUpperCase())] = val;
+                    }});
+                    // Copy explicit attributes that JS may have changed
+                    ['fill', 'stroke', 'stroke-width', 'opacity'].forEach(attr => {{
+                        const v = srcEls[i].getAttribute(attr);
+                        if (v !== null) allEls[i].setAttribute(attr, v);
+                    }});
+                }}
+
+                return {{ clone, w, h }};
+            }}
+
+            function orgSvgToCanvas(svgClone, w, h) {{
+                return new Promise((resolve, reject) => {{
+                    const serializer = new XMLSerializer();
+                    const svgString = serializer.serializeToString(svgClone);
+                    const svgBlob = new Blob([svgString], {{type: 'image/svg+xml;charset=utf-8'}});
+                    const url = URL.createObjectURL(svgBlob);
+
+                    const img = new Image();
+                    img.onload = function() {{
+                        // 2x scale for crisp export
+                        const scale = 2;
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.naturalWidth * scale;
+                        canvas.height = img.naturalHeight * scale;
+                        const ctx = canvas.getContext('2d');
+                        ctx.scale(scale, scale);
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, img.naturalWidth, img.naturalHeight);
+                        ctx.drawImage(img, 0, 0);
+                        URL.revokeObjectURL(url);
+                        resolve({{ canvas, imgW: img.naturalWidth, imgH: img.naturalHeight }});
+                    }};
+                    img.onerror = function(e) {{
+                        URL.revokeObjectURL(url);
+                        reject(e);
+                    }};
+                    img.src = url;
+                }});
+            }}
+
+            function orgExportChart(format) {{
+                const result = orgGetSvgForExport();
+                if (!result) {{
+                    orgShowExportStatus('Error: SVG tidak ditemukan');
+                    return;
+                }}
+
+                orgShowExportStatus('Memproses export...');
+
+                const {{ clone, w, h }} = result;
+
+                if (format === 'png') {{
+                    orgSvgToCanvas(clone, w, h).then(({{ canvas }}) => {{
+                        canvas.toBlob(function(blob) {{
+                            const a = document.createElement('a');
+                            a.href = URL.createObjectURL(blob);
+                            a.download = 'org_chart_{selected_sheet_name}.png';
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            orgShowExportStatus('PNG berhasil didownload!');
+                        }}, 'image/png');
+                    }}).catch(() => {{
+                        orgShowExportStatus('Gagal export PNG');
+                    }});
+                }}
+                else if (format === 'pdf') {{
+                    orgSvgToCanvas(clone, w, h).then(({{ canvas, imgW, imgH }}) => {{
+                        try {{
+                            const {{ jsPDF }} = window.jspdf;
+                            const padding = 30;
+                            const pageW = imgW + padding * 2;
+                            const pageH = imgH + padding * 2;
+                            const isLandscape = imgW > imgH;
+
+                            const pdf = new jsPDF({{
+                                orientation: isLandscape ? 'landscape' : 'portrait',
+                                unit: 'px',
+                                format: [pageW, pageH],
+                                hotfixes: ['px_scaling']
+                            }});
+
+                            const imgData = canvas.toDataURL('image/png', 1.0);
+                            pdf.addImage(imgData, 'PNG', padding, padding, imgW, imgH);
+                            pdf.save('org_chart_{selected_sheet_name}.pdf');
+                            orgShowExportStatus('PDF berhasil didownload!');
+                        }} catch(e) {{
+                            console.error(e);
+                            orgShowExportStatus('Gagal export PDF, coba PNG');
+                        }}
+                    }}).catch(() => {{
+                        orgShowExportStatus('Gagal export PDF');
+                    }});
+                }}
+            }}
         </script>
         """
-        components.html(frame_html, height=display_height + 12, scrolling=False)
-
-        export_graph = org_graph.copy()
-        export_graph.attr(bgcolor="white")
-
-        pdf_col, png_col = st.columns(2)
-        with pdf_col:
-            st.download_button(
-                "📄 Download PDF", data=export_graph.pipe(format="pdf"),
-                file_name=f"org_chart_{selected_sheet_name}.pdf", mime="application/pdf",
-                use_container_width=True,
-            )
-        with png_col:
-            st.download_button(
-                "🖼️ Download PNG", data=export_graph.pipe(format="png"),
-                file_name=f"org_chart_{selected_sheet_name}.png", mime="image/png",
-                use_container_width=True,
-            )
+        components.html(frame_html, height=display_height + 140, scrolling=False)
     except Exception:
         st.info(
-            "⚠️ Belum bisa render mode frame-scroll (kemungkinan `packages.txt`"
+            "âš ï¸ Belum bisa render mode frame-scroll (kemungkinan `packages.txt`"
             " berisi `graphviz` belum ter-deploy di server). Menampilkan mode"
             " biasa untuk sementara."
         )
         st.graphviz_chart(org_graph, use_container_width=False)
 
     if active_matched:
-        st.markdown(f"##### 📋 Detail — {active_label}")
+        st.markdown(f"##### ðŸ“‹ Detail â€” {active_label}")
         detail_cols = ["Nama", "Jabatan", "Atasan"]
         if "Project" in data_df.columns:
             detail_cols.append("Project")
@@ -575,9 +1099,9 @@ with tab_chart:
         st.dataframe(detail_df, use_container_width=True, hide_index=True)
 
 with tab_editor:
-    st.subheader("📄 Data Google Sheets")
+    st.subheader("ðŸ“„ Data Google Sheets")
     st.info(
-        "Tampilan ini hanya untuk melihat data (read-only) — tidak ada"
+        "Tampilan ini hanya untuk melihat data (read-only) â€” tidak ada"
         " perubahan yang bisa disimpan kembali ke Google Sheets dari sini."
     )
     st.dataframe(data_df, use_container_width=True, hide_index=True)
